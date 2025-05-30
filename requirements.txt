@@ -1,7 +1,6 @@
 streamlit
 pandas
 feedparser
-pygooglenews
 python-dateutil
 together
 beautifulsoup4
@@ -10,3 +9,4 @@ xlsxwriter
 bs4
 dateparser
 openpyxl
+pygooglenews --no-deps
