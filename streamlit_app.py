@@ -43,7 +43,7 @@ High Opportunity
 Reason: Financial Growth & Stability - Company announced record profits and significant investment plans, suggesting increased budget for employee benefits.
 Summary: The company's robust financial performance indicates a strong capacity and potential willingness to invest more in comprehensive employee benefits. This presents a prime opportunity for enhanced offerings.
 
-**Example Output Format (for No Opportunity):**
+**Example Output Format (for No Opportunity):
 No Upsell Opportunity Indicated
 Summary: The article discusses general industry trends not specific to the company's growth or employee-related initiatives. It provides no indication of changes relevant to enhanced employee benefits or potential upselling.
 """
@@ -209,52 +209,77 @@ def display_summary_with_color(company_name, summary_text):
         st.error(summary_text)  # Red for no/unknown opportunity
 
 
-def run_analysis(company_names, days_to_search):
+def run_analysis(company_names, days_to_search, custom_keyword_string=None):
     """Main function to orchestrate the news fetching and analysis for multiple companies."""
     results = {}
     today = datetime.today()
-    # Use user-inputted days for the date range
     from_date = today - timedelta(days=days_to_search)
     max_articles_per_query = 10
 
-    # --- YOUR SPECIFIED UPSELL KEYWORDS ---
-    upsell_keywords = [
-        # Original
-        "employee wellness", "mental health", "gym memberships", "lifestyle benefits",
-        "remote work policy", "hybrid work", "flexible hours", "wellness programs",
-        "employee upskilling", "learning program", "L&D initiatives", "digital training",
-        "career development", "skill building", "internal promotions",
-        "diversity equity inclusion", "LGBTQ+ policy", "gender affirmation",
-        "disability inclusion", "inclusive benefits", "DEI initiatives",
-        "employer of choice", "employee engagement strategy", "workplace culture",
-        "employee satisfaction", "employee retention", "great place to work",
-        "benefits automation", "HR tech", "employee benefits platform", "benefits outsourcing",
-        "AI in HR", "HRMS integration", "benefits digitization",
-        "labor law compliance", "social security code", "employee tax benefits",
-        "fringe benefit tax", "benefits structure optimization",
-        "mass hiring", "talent acquisition strategy", "hiring surge", "hiring spree",
-        "campus recruitment", "talent war", "employer branding",
+    # --- DEFAULT UPSELL KEYWORDS (NOW CATEGORIZED) ---
+    default_upsell_keywords = {
+        "Financial Growth & Stability": [
+            "record revenue", "profit growth", "EBITDA margin increase", "funding round",
+            "Series A funding", "Series B funding", "IPO plans", "profit surge",
+            "quarterly growth", "yearly growth", "financial turnaround",
+            "cash flow positive", "valuation increase", "market share gain",
+            "cost optimization success", "increased budget"
+        ],
+        "Workforce Expansion & Hiring": [
+            "mass hiring", "significant headcount growth", "talent acquisition drives",
+            "campus recruitment", "leadership hiring", "expansion into new markets",
+            "hiring plans", "expansion hiring", "workforce expansion", "headcount growth",
+            "employee growth", "talent acquisition drive", "hiring surge", "hiring spree"
+        ],
+        "Employee-Centric Initiatives": [
+            "new employee wellness programs", "enhanced mental health support",
+            "focus on employee experience", "DEI initiatives", "improved workplace culture",
+            "employee recognition programs", "employee upskilling", "learning program",
+            "L&D initiatives", "digital training", "career development", "skill building",
+            "diversity equity inclusion", "LGBTQ+ policy", "gender affirmation",
+            "disability inclusion", "inclusive benefits", "employee engagement program",
+            "rewards and recognition"
+        ],
+        "Strategic Investments & Expansion": [
+            "business expansion", "new product launches", "digital transformation",
+            "acquisition of new companies", "investments in HR tech", "major strategic partnerships",
+            "business transformation", "workplace digitization", "HR transformation"
+        ],
+        "Market Leadership & Employer Branding": [
+            "awards for best workplace", "Great Place to Work recognition",
+            "strong employer branding", "high employee satisfaction", "employee retention",
+            "employer of choice", "employer of the year", "HR excellence award", "diversity champion"
+        ],
+        "Benefits Strategy Evolution": [
+            "overhaul of benefits", "digitization of HR", "adoption of new benefits platforms",
+            "focus on flexible/hybrid work benefits", "efforts to optimize benefits structure",
+            "benefits automation", "employee benefits platform", "benefits outsourcing",
+            "AI in HR", "HRMS integration", "benefits digitization"
+        ],
+        "Compliance & Regulatory Readiness": [
+            "proactive measures for new labor laws", "tax benefits for employees",
+            "social security code adherence", "ensuring comprehensive benefits compliance",
+            "fringe benefit tax", "benefits structure optimization"
+        ],
+        "Workplace & Culture Trends": [
+            "remote work policy", "hybrid work", "flexible hours", "future of work", "employee-first culture"
+        ]
+    }
 
-        # New additions: Financial & Business Growth
-        "record revenue", "profit growth", "EBITDA margin increase", "business expansion",
-        "funding round", "Series A funding", "Series B funding", "IPO plans",
-        "profit surge", "quarterly growth", "yearly growth", "financial turnaround",
-        "cash flow positive", "valuation increase", "market share gain",
-        "cost optimization success",
-
-        # Hiring & Organizational Growth
-        "hiring plans", "expansion hiring", "workforce expansion", "headcount growth",
-        "employee growth", "talent acquisition drive", "leadership hiring",
-
-        # Strategic Initiatives
-        "business transformation", "employee experience initiative", "workplace digitization",
-        "employee-first culture", "future of work", "benefits overhaul", "HR transformation",
-        "employee engagement program", "rewards and recognition",
-
-        # Market Recognition & Awards
-        "best workplace award", "great place to work", "employer of the year",
-        "HR excellence award", "diversity champion"
-    ]
+    # Process custom keywords from text area
+    custom_keywords_flat_list = []
+    if custom_keyword_string:
+        custom_keywords_flat_list = [
+            kw.strip() for kw in custom_keyword_string.split(',') if kw.strip()]
+        if custom_keywords_flat_list:
+            # If custom keywords are provided, use them; otherwise, use default categories
+            # We'll put all custom keywords into a single 'Custom' category for consistency
+            upsell_keywords_to_use = {
+                "Custom Keywords": custom_keywords_flat_list}
+        else:
+            upsell_keywords_to_use = default_upsell_keywords
+    else:
+        upsell_keywords_to_use = default_upsell_keywords
 
     # --- YOUR SPECIFIED ALLOWED DOMAINS (UNCHANGED) ---
     allowed_domains = [
@@ -284,9 +309,14 @@ def run_analysis(company_names, days_to_search):
     st.sidebar.info(
         f"Filtered by {len(processed_allowed_domains)} specified business news domains.")
 
+    if custom_keyword_string:
+        st.sidebar.info("Using **custom keywords** for search.")
+    else:
+        st.sidebar.info("Using **default keywords** for search.")
+
     for company in company_names:
-        queries = [company] + \
-            [f"{company} {keyword}" for keyword in upsell_keywords]
+        queries = [company] + [f"{company} {keyword}" for category_keywords in upsell_keywords_to_use.values()
+                               for keyword in category_keywords]
         company_analysis = analyze_news(
             company, from_date, today, max_articles_per_query, queries, processed_allowed_domains
         )
@@ -361,6 +391,74 @@ else:
     company_names_to_analyze = company_names_from_upload
 
 
+# --- Keyword Customization (Text Area) ---
+st.markdown("---")
+st.subheader("Custom Search Keywords (Optional)")
+st.info("Enter your custom keywords below, separated by commas. If this field is left empty, the default keywords will be used.")
+
+custom_keywords_input = st.text_area(
+    "Enter keywords (e.g., increased hiring, new product, funding round)",
+    height=100,
+    help="Each keyword will be searched alongside the company name. Separate multiple keywords with commas."
+)
+
+
+# Display default keywords with categorization
+st.markdown("---")
+st.subheader("Default Upsell Keywords for Reference")
+with st.expander("Click to view default keywords by category"):
+    default_upsell_keywords_display = {
+        "Financial Growth & Stability": [
+            "record revenue", "profit growth", "EBITDA margin increase", "funding round",
+            "Series A funding", "Series B funding", "IPO plans", "profit surge",
+            "quarterly growth", "yearly growth", "financial turnaround",
+            "cash flow positive", "valuation increase", "market share gain",
+            "cost optimization success", "increased budget"
+        ],
+        "Workforce Expansion & Hiring": [
+            "mass hiring", "significant headcount growth", "talent acquisition drives",
+            "campus recruitment", "leadership hiring", "expansion into new markets",
+            "hiring plans", "expansion hiring", "workforce expansion", "headcount growth",
+            "employee growth", "talent acquisition drive", "hiring surge", "hiring spree"
+        ],
+        "Employee-Centric Initiatives": [
+            "new employee wellness programs", "enhanced mental health support",
+            "focus on employee experience", "DEI initiatives", "improved workplace culture",
+            "employee recognition programs", "employee upskilling", "learning program",
+            "L&D initiatives", "digital training", "career development", "skill building",
+            "diversity equity inclusion", "LGBTQ+ policy", "gender affirmation",
+            "disability inclusion", "inclusive benefits", "employee engagement program",
+            "rewards and recognition"
+        ],
+        "Strategic Investments & Expansion": [
+            "business expansion", "new product launches", "digital transformation",
+            "acquisition of new companies", "investments in HR tech", "major strategic partnerships",
+            "business transformation", "workplace digitization", "HR transformation"
+        ],
+        "Market Leadership & Employer Branding": [
+            "awards for best workplace", "Great Place to Work recognition",
+            "strong employer branding", "high employee satisfaction", "employee retention",
+            "employer of choice", "employer of the year", "HR excellence award", "diversity champion"
+        ],
+        "Benefits Strategy Evolution": [
+            "overhaul of benefits", "digitization of HR", "adoption of new benefits platforms",
+            "focus on flexible/hybrid work benefits", "efforts to optimize benefits structure",
+            "benefits automation", "employee benefits platform", "benefits outsourcing",
+            "AI in HR", "HRMS integration", "benefits digitization"
+        ],
+        "Compliance & Regulatory Readiness": [
+            "proactive measures for new labor laws", "tax benefits for employees",
+            "social security code adherence", "ensuring comprehensive benefits compliance",
+            "fringe benefit tax", "benefits structure optimization"
+        ],
+        "Workplace & Culture Trends": [
+            "remote work policy", "hybrid work", "flexible hours", "future of work", "employee-first culture"
+        ]
+    }
+    for category, keywords in default_upsell_keywords_display.items():
+        st.markdown(f"**{category}**: {', '.join(keywords)}")
+
+
 if st.button("🚀 Start Analysis"):
     if not company_names_to_analyze:
         st.warning(
@@ -368,7 +466,7 @@ if st.button("🚀 Start Analysis"):
     else:
         with st.spinner("Crunching numbers and fetching news... This might take a while for each company."):
             analysis_results = run_analysis(
-                company_names_to_analyze, days_to_search)  # Pass days_to_search
+                company_names_to_analyze, days_to_search, custom_keywords_input)  # Pass custom keywords input
 
         st.success("🎉 Analysis Complete!")
         st.markdown("---")
