@@ -9,4 +9,4 @@ xlsxwriter
 bs4
 dateparser
 openpyxl
-pygooglenews --no-deps
+pygooglenews
